@@ -1,0 +1,369 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survival Mission: Night Flare Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-bg: #090310;
+            --dark-purple: #1a0b2e;
+            --neon-purple: #b026ff;
+            --flare-pink: #ff2a70;
+            --mud-gray: #8a8d91;
+            --text-light: #e0e0e0;
+        }
+        
+        body, html {
+            margin: 0; padding: 0;
+            width: 100vw; height: 100vh;
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            font-family: 'Special Elite', monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Gritty Survival Night Background */
+        .bg-layer {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 40%, var(--dark-purple) 0%, var(--dark-bg) 80%);
+            z-index: -3;
+        }
+        
+        /* Dirt/Noise Texture */
+        .texture {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        .slide {
+            display: none;
+            width: 90%;
+            height: 90%;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            z-index: 10;
+        }
+        .active { 
+            display: flex; 
+            opacity: 1; 
+        }
+        
+        h1 { 
+            font-family: 'Oswald', sans-serif; 
+            font-size: 6rem; 
+            color: var(--text-light); 
+            text-transform: uppercase; 
+            letter-spacing: 5px; 
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.8);
+        }
+        
+        .highlight {
+            color: var(--neon-purple);
+            text-shadow: 0 0 15px rgba(176, 38, 255, 0.6);
+        }
+
+        .danger {
+            color: var(--flare-pink);
+            text-shadow: 0 0 15px rgba(255, 42, 112, 0.6);
+        }
+        
+        h2 { 
+            font-family: 'Oswald', sans-serif;
+            font-size: 2.8rem; 
+            color: var(--mud-gray); 
+            letter-spacing: 2px;
+        }
+        
+        p, li { 
+            font-size: 1.8rem; 
+            line-height: 1.8; 
+        }
+        
+        ul { text-align: left; list-style-type: none; padding: 0; }
+        ul li::before { content: ">> "; color: var(--neon-purple); font-weight: bold; }
+
+        .dossier-panel {
+            background: rgba(15, 5, 25, 0.8);
+            border: 2px solid var(--neon-purple);
+            border-radius: 5px;
+            padding: 40px 60px;
+            box-shadow: inset 0 0 20px rgba(176, 38, 255, 0.2);
+            text-align: left;
+            margin-top: 30px;
+            position: relative;
+        }
+        
+        /* Tape effect */
+        .dossier-panel::before {
+            content: '';
+            position: absolute;
+            top: -15px; left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            width: 100px; height: 30px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .timer-display {
+            font-family: 'Oswald', sans-serif;
+            font-size: 9rem;
+            color: var(--flare-pink);
+            text-shadow: 0 0 30px rgba(255, 42, 112, 0.5);
+            margin: 20px 0;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .timer-display:hover { transform: scale(1.05); }
+        
+        /* Gritty Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            margin-top: 30px;
+        }
+        .card {
+            background: rgba(0,0,0,0.6);
+            border: 1px dashed var(--mud-gray);
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+        .card:hover { border-color: var(--neon-purple); }
+        .card.selected {
+            background: rgba(176, 38, 255, 0.15);
+            border: 2px solid var(--neon-purple);
+            box-shadow: 0 0 15px rgba(176, 38, 255, 0.3);
+        }
+        
+        .card .num { 
+            display: block; 
+            color: var(--mud-gray); 
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.5rem; 
+            margin-bottom: 5px; 
+        }
+        .card.selected .num { color: var(--neon-purple); }
+        
+        .card .name { font-size: 1.4rem; font-weight: bold; }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-family: 'Oswald', sans-serif;
+            color: rgba(255,255,255,0.2);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-layer"></div>
+    <div class="texture"></div>
+
+    <!-- Slide 1 -->
+    <div class="slide active">
+        <h2 style="color: var(--mud-gray);">A TEAM SURVIVAL CHALLENGE</h2>
+        <h1 class="highlight" style="font-size: 7rem; margin-top: 0;">365 DAYS</h1>
+        <p>Location: Classified Remote Island</p>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide">
+        <h1>DAY 0: <span class="danger">THE CRASH</span></h1>
+        <div class="dossier-panel">
+            <p>Last night, a violent storm destroyed your ship.</p>
+            <p>You wake up in the mud. It is pitch black.</p>
+            <p>You light a purple distress flare. It reveals the beach...</p>
+            <p class="highlight" style="font-weight: bold; margin-top: 20px;">The only other survivors are the people at your table.</p>
+        </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide">
+        <h1 class="danger">THE HARSH REALITY</h1>
+        <div class="dossier-panel" style="border-color: var(--flare-pink);">
+            <ul>
+                <li>NO Supermarket, NO clean water.</li>
+                <li>NO Hospital, NO medicine.</li>
+                <li>NO Signal, NO electricity.</li>
+                <li><span class="danger">NO RESCUE.</span> (ETA: 1 Year)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide">
+        <h1>WHAT WILL <span class="danger">KILL YOU</span> FIRST?</h1>
+        <h2 style="color: var(--text-light);">The Rule of 3</h2>
+        <div class="dossier-panel">
+            <p><strong>3 Minutes</strong> without <span class="danger">Oxygen</span></p>
+            <p><strong>3 Hours</strong> without <span class="danger">Shelter</span> (in extreme weather)</p>
+            <p><strong>3 Days</strong> without <span class="danger">Water</span></p>
+            <p><strong>3 Weeks</strong> without <span class="danger">Food</span></p>
+        </div>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide">
+        <h1 class="highlight">THE HOPE</h1>
+        <p>In the light of the flare, you see it.</p>
+        <h2>A Military Emergency Drop Box.</h2>
+        <p>It contains 16 survival tools. But the lock is damaged.</p>
+    </div>
+
+    <!-- Slide 6: RULES BEFORE BOX -->
+    <div class="slide">
+        <h1>MISSION <span class="highlight">RULES</span></h1>
+        <div class="dossier-panel">
+            <p><span class="danger">Constraint:</span> Your team can only carry <strong>6 items</strong> into the jungle.</p>
+            <p><span class="danger">Phase 1 (Private):</span> Choose 1 item you personally want to protect.</p>
+            <p><span class="danger">Phase 2 (Debate):</span> Argue with your team. Eliminate the weak choices.</p>
+            <p><span class="danger">Ultimate Rule:</span> Everyone must speak. You must agree on exactly 6 items.</p>
+        </div>
+    </div>
+
+    <!-- Slide 7: TACTICAL COMMUNICATION (O.R.E.O) -->
+    <div class="slide">
+        <h1>TACTICAL COMMUNICATION</h1>
+        <h2>Use the <span class="highlight">O.R.E.O.</span> Framework</h2>
+        <div class="dossier-panel">
+            <p><strong class="highlight">O</strong>pening Opinion: "I strongly believe we MUST keep the..."</p>
+            <p><strong class="highlight">R</strong>eason: "The main reason is that without it, we..."</p>
+            <p><strong class="highlight">E</strong>xample: "For example, if it rains, this will help us to..."</p>
+            <p><strong class="highlight">O</strong>bjection / Over to you: "I see your point, but [Item] is more urgent because..."</p>
+        </div>
+    </div>
+
+    <!-- Slide 8 -->
+    <div class="slide">
+        <h1 class="danger">THE BOX OPENS</h1>
+        <p>Memorize your choices. The survival mission begins now.</p>
+    </div>
+
+    <!-- Slide 9 -->
+    <div class="slide">
+        <h1 style="font-size: 4rem;">SUPPLIES: <span class="highlight">ESSENTIALS</span></h1>
+        <div class="grid">
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">01</span><span class="name">Water Filter</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">02</span><span class="name">Fishing Net</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">03</span><span class="name">Windproof Lighter</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">04</span><span class="name">Strong Knife</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">05</span><span class="name">First-Aid Kit</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">06</span><span class="name">Cooking Pot</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">07</span><span class="name">50m Nylon Rope</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">08</span><span class="name">Canvas Tent</span></div>
+        </div>
+    </div>
+
+    <!-- Slide 10 -->
+    <div class="slide">
+        <h1 style="font-size: 4rem;">SUPPLIES: <span class="highlight">VARIABLES</span></h1>
+        <div class="grid">
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">09</span><span class="name">Vegetable Seeds</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">10</span><span class="name">Plant Guide Book</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">11</span><span class="name">Small Axe</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">12</span><span class="name">Metal Bucket</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">13</span><span class="name">Antibacterial Soap</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">14</span><span class="name">Mosquito Net</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">15</span><span class="name">Signal Mirror</span></div>
+            <div class="card" onclick="this.classList.toggle('selected')"><span class="num">16</span><span class="name">Solar Radio</span></div>
+        </div>
+    </div>
+
+    <!-- Slide 11 -->
+    <div class="slide">
+        <h1 class="highlight">PHASE 1: SILENCE</h1>
+        <p>Analyze the 16 items. Prepare your <strong class="highlight">O.R.E.O.</strong> argument for your 1 item.</p>
+        <div class="timer-display" id="timer1" onclick="startTimer('timer1', 120)">02:00</div>
+        <p style="font-size: 1.2rem; color: var(--mud-gray);">(Click to start)</p>
+    </div>
+
+    <!-- Slide 12 -->
+    <div class="slide">
+        <h1 class="danger">PHASE 2: DEBATE</h1>
+        <p>Fight for your item. Your team MUST eliminate 10 items.</p>
+        <p>Agree on the final <strong class="highlight">6 items</strong>.</p>
+        <div class="timer-display" id="timer2" onclick="startTimer('timer2', 600)">10:00</div>
+    </div>
+
+    <!-- Slide 13 -->
+    <div class="slide">
+        <h1>IELTS <span class="highlight">PART 2</span> LINK</h1>
+        <div class="dossier-panel">
+            <p style="font-weight: bold; margin-bottom: 20px; color: var(--neon-purple);">Describe a time when you worked in a group.</p>
+            <ul>
+                <li>What you did <span style="color: var(--mud-gray);">(The survival mission)</span></li>
+                <li>Who you worked with <span style="color: var(--mud-gray);">(Your 27003 classmates)</span></li>
+                <li>What problems you faced <span style="color: var(--mud-gray);">(Choosing only 6 items, disagreements)</span></li>
+                <li>Explain why you worked in the group <span style="color: var(--mud-gray);">(To survive 365 days)</span></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="controls">[ &larr; &rarr; TO NAVIGATE ]</div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' && currentSlide < slides.length - 1) {
+                slides[currentSlide].classList.remove('active');
+                currentSlide++;
+                setTimeout(() => slides[currentSlide].classList.add('active'), 50);
+            } else if (e.key === 'ArrowLeft' && currentSlide > 0) {
+                slides[currentSlide].classList.remove('active');
+                currentSlide--;
+                setTimeout(() => slides[currentSlide].classList.add('active'), 50);
+            }
+        });
+
+        let activeTimers = {};
+        function startTimer(id, duration) {
+            if (activeTimers[id]) clearInterval(activeTimers[id]);
+            let timer = duration, minutes, seconds;
+            const display = document.getElementById(id);
+            
+            activeTimers[id] = setInterval(function () {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                display.textContent = minutes + ":" + seconds;
+
+                if (--timer < 0) {
+                    clearInterval(activeTimers[id]);
+                    display.textContent = "00:00";
+                    display.style.color = "#ff2a70";
+                    display.style.animation = "blink 1s infinite";
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
