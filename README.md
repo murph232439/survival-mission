@@ -15,4 +15,6 @@ Open `outputs/index.html` in a browser.
 
 ## Deployment
 
+Live site: https://murph232439.github.io/survival-mission/
+
 The page is deployed with GitHub Pages from the repository `survival-mission`.
